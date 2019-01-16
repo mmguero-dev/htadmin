@@ -101,7 +101,6 @@ class htpasswd {
         $err_code = self::errcode("perl_scripts/cperl perl_scripts/phtpasswd " .
             "-v -p " . escapeshellarg($password) . " -u " . escapeshellarg($username) .
             " " . escapeshellarg($this->filename),"user_check","");
-        echo 'err_code '. $err_code.'<br/>';
         return !$err_code;
     }
 
