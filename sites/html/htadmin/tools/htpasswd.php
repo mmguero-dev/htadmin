@@ -100,7 +100,8 @@ class htpasswd {
     function user_check($username, $password) {
         $err_code = self::errcode("perl_scripts/cperl perl_scripts/phtpasswd " .
             "-v -p " . escapeshellarg($password) . " -u " . escapeshellarg($username) .
-            " " . escapeshellarg($this->filename));
+            " " . escapeshellarg($this->filename),"user_check","");
+        echo 'err_code '. $err_code.'<br/>';
         return !$err_code;
     }
 
@@ -173,23 +174,33 @@ class htpasswd {
         return true;
     }
     static function htcrypt($password) {
-        return self::stdout("perl_scripts/cperl perl_scripts/acrypt " .
-            escapeshellarg($password));
+        $out = self::stdout("perl_scripts/cperl perl_scripts/acrypt " .
+            escapeshellarg($password),"htcrypt","");
+        return $out[0];
     }
 
-    static function errcode($cmd,$logprefix="cmd",&$error_msg=NULL)
+    static function check_password_hash($password, $hash) {
+        $err_code = self::errcode("perl_scripts/acrypt -v " .
+            escapeshellarg($hash) . " " . escapeshellarg($password),"check_password_hash");
+        return !$err_code;
+    }
+
+    static function errcode($cmd,$logprefix="cmd",$cwd=NULL,&$error_msg=NULL)
     {
         $tmpfname = tempnam(sys_get_temp_dir(),$logprefix.'_');
 
         $descriptorspec = array(
            0 => array("pipe", "r"),
-           1 => array("pipe", "w"),
+           1 => array("file", $tmpfname, "a"),
            2 => array("file", $tmpfname, "a")
         );
 
-        $cwd = sys_get_temp_dir();
+        if($cwd === NULL)
+            $cwd = sys_get_temp_dir();
+
         $env = array();
         $env['PATH'] = getenv('PATH');
+        $env['APACHE_RUN_USER'] = getenv('APACHE_RUN_USER');
         // TODO in config
         $env['LANG'] = "en_US.UTF-8";
 
@@ -212,7 +223,7 @@ class htpasswd {
         fwrite(STDERR, 'Could not open process'. PHP_EOL);
     }
 
-    static function stdout($cmd,$logprefix="cmd")
+    static function stdout($cmd,$logprefix="cmd",$cwd=NULL)
     {
         $tmpfname = tempnam(sys_get_temp_dir(),$logprefix.'_');
 
@@ -222,9 +233,12 @@ class htpasswd {
            2 => array("file", $tmpfname, "a")
         );
 
-        $cwd = sys_get_temp_dir();
+        if($cwd === NULL)
+            $cwd = sys_get_temp_dir();
+
         $env = array();
         $env['PATH'] = getenv('PATH');
+        $env['APACHE_RUN_USER'] = getenv('APACHE_RUN_USER');
         // TODO in config
         $env['LANG'] = "en_US.UTF-8";
 
