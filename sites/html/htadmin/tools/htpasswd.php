@@ -98,16 +98,10 @@ class htpasswd {
      * @return boolean true if password is correct!
      */
     function user_check($username, $password) {
-        rewind ( $this->fp );
-        while ( ! feof ( $this->fp ) && $userpass = explode ( ":", $line = rtrim ( fgets ( $this->fp ) ) ) ) {
-            $lusername = trim ( $userpass [0] );
-            $hash = trim ($userpass [1] );
-
-            if ($lusername == $username) {
-                return self::check_password_hash($password, $hash);
-            }
-        }
-        return false;
+        $err_code = self::errcode("perl_scripts/cperl perl_scripts/phtpasswd " .
+            "-v -p " . escapeshellarg($password) . " -u " . escapeshellarg($username) .
+            " " . escapeshellarg($this->filename));
+        return !$err_code;
     }
 
     function user_delete($username) {
@@ -179,13 +173,87 @@ class htpasswd {
         return true;
     }
     static function htcrypt($password) {
-        return password_hash($password,PASSWORD_DEFAULT);
+        return self::stdout("perl_scripts/cperl perl_scripts/acrypt " .
+            escapeshellarg($password));
     }
 
-    static function check_password_hash($password, $hash) {
-        return password_verify($password, $hash);
+    static function errcode($cmd,$logprefix="cmd",&$error_msg=NULL)
+    {
+        $tmpfname = tempnam(sys_get_temp_dir(),$logprefix.'_');
+
+        $descriptorspec = array(
+           0 => array("pipe", "r"),
+           1 => array("pipe", "w"),
+           2 => array("file", $tmpfname, "a")
+        );
+
+        $cwd = sys_get_temp_dir();
+        $env = array();
+        $env['PATH'] = getenv('PATH');
+        // TODO in config
+        $env['LANG'] = "en_US.UTF-8";
+
+        while (@ ob_end_flush());
+
+        $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
+
+        if (is_resource($process)) {
+
+            $return_value = proc_close($process);
+
+            if($return_value)
+                if($error_msg !== NULL)
+                    $error_msg = lastline($tmpfname);
+
+            return $return_value;
+        }
+
+        if(!defined('STDERR')) define('STDERR', fopen('php://stderr', 'w'));
+        fwrite(STDERR, 'Could not open process'. PHP_EOL);
     }
 
+    static function stdout($cmd,$logprefix="cmd")
+    {
+        $tmpfname = tempnam(sys_get_temp_dir(),$logprefix.'_');
+
+        $descriptorspec = array(
+           0 => array("pipe", "r"),
+           1 => array("pipe", "w"),
+           2 => array("file", $tmpfname, "a")
+        );
+
+        $cwd = sys_get_temp_dir();
+        $env = array();
+        $env['PATH'] = getenv('PATH');
+        // TODO in config
+        $env['LANG'] = "en_US.UTF-8";
+
+        while (@ ob_end_flush());
+
+        $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
+
+        if (is_resource($process)) {
+
+            $out = array ();
+            $fd2 = $pipes[1];
+            $i = 0;
+
+            while (($line = fgets($fd2)) !== false) {
+                $out [$i] = dropn($line); // dropping LF
+                $i ++;
+            }
+
+            fclose($fd2);
+
+            $return_value = proc_close($process);
+
+            if(!$return_value)
+                return $out;
+        }
+
+        if(!defined('STDERR')) define('STDERR', fopen('php://stderr', 'w'));
+        fwrite(STDERR, 'Could not open process'. PHP_EOL);
+    }
 
 }
 
