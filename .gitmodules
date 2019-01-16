@@ -1,0 +1,3 @@
+[submodule "vendor/perl_scripts"]
+	path = vendor/perl_scripts
+	url = https://github.com/lbrayner/perl_scripts
