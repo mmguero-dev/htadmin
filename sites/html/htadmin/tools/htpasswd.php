@@ -179,8 +179,9 @@ class htpasswd {
     }
 
     static function check_password_hash($password, $hash) {
-        $err_code = self::errcode("perl_scripts/acrypt -v " .
-            escapeshellarg($hash) . " " . escapeshellarg($password),"check_password_hash");
+        $err_code = self::errcode("perl_scripts/cperl perl_scripts/acrypt -v " .
+            escapeshellarg($hash) . " " . escapeshellarg($password),
+            "check_password_hash","");
         return !$err_code;
     }
 
