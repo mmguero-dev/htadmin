@@ -28,7 +28,7 @@ sudo mkdir /var/www/perl5 /var/www/.cpan
 sudo chown www-data:www-data /var/www/perl5 /var/www/.cpan
 ```
 
-Start a CPAN shell and configure the module (use the defaults):
+Start a CPAN shell and configure the module (CPAN is also a module) — use the defaults:
 
 ```
 sudo -u www-data perl -MCPAN -e shell
