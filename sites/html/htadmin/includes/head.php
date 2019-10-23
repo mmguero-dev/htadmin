@@ -1,9 +1,19 @@
-<?php 
+<?php
+#
+# This generates the HTML <head> section of several php pages.
+# This pulls in Javascript and CSS style defin. files.
+# This application used the 'bootstrap' CSS templating files.
+# This page also defines the HTML <title> for the application.
+#
 include_once ('tools/util.php');
-if (!isset($ini)) {
-	$ini = read_config ();
+if (!isset($ini)) {                 # We haven't loaded the config/config.ini vars yet.
+	$ini = read_config ();            # Read in the config.ini vars.
+	# dbg_var_dump($ini);
 }
+# Turn on full PHP error reporting:
+# error_reporting(E_ALL);
 ?>
+
 <html>
 <head>
 <!-- Latest compiled and minified CSS -->
@@ -16,8 +26,11 @@ if (!isset($ini)) {
 <script src="script/jquery-1.12.0.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 <script src="script/script.js"></script>
-<link rel="stylesheet" href="styles/style.css">
+<link rel="stylesheet" href="styles/style.css">    <!-- These are local (overriding) css styles. -->
+
+<!-- viewport: To ensure proper rendering and touch zooming. See 3.3.6 bootstrap docs -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title><?php echo $ini ['app_title']; ?></title>
 </head>
 <body>
