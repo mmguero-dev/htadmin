@@ -50,7 +50,7 @@ function check_username_quality($username, $min_username_len, $max_username_len,
 
     if (! $reg_ok) {
         #phpAlert("Error in username_legal_chars test.");
-        $error_msg = "Error: username '" . $username . "'  must start with an alpha character; Allowed special chars are: -, _</p>";
+        $error_msg = "Error: username '" . $username . "' contains invalid characters. Allowed characters are alphanumeric, underscore, dash, and period.</p>";
     }
     return $reg_ok;
 }
