@@ -19,10 +19,10 @@ class htpasswd {
     var $metafilename;  # Path to user's formal name, email address.
 
     function htpasswd( $htpasswdfile, $metadata_path = "") {
-      @$this->fp = @$this::open_or_create ( $htpasswdfile );
+      @$this->fp = @$this::open_or_create ( $htpasswdfile, true );
 
       if (!is_null_or_empty_string($metadata_path)) {
-        @$this->metafp = @$this::open_or_create ( $metadata_path );
+        @$this->metafp = @$this::open_or_create ( $metadata_path, true );
         $this->metafilename = $metadata_path;
       }
 
@@ -124,27 +124,15 @@ class htpasswd {
         return false;
       }
 
-      # seek to one byte prior to the end of the file to try to determine if it needs a newline
-      $i_result = fseek ( $this->fp, -1, SEEK_END );
+      $i_result = fseek ( $this->fp, 0, SEEK_END );
       if ($i_result == -1) {
-        # fseek failed for some reason, assume we need a newline and seek to the end of the file
-        $needs_newline = true;
-        # seek to the end of the file
-        $i_result = fseek ( $this->fp, 0, SEEK_END );
-        if ($i_result == -1) {
-          # file seek error
-          $error_msg = "Error: htpassword file seek error.";
-          return false;
-        }
-      } else {
-        # this fgets should the file pointer so that we are now at the end of the file
-        $last_char = fgets( $this->fp, 1 );
-        # we need a newline if the last character in the file wasn't one
-        $needs_newline = ($last_char != "\n");
+        # File seek error.
+        $error_msg = "Error: htpassword file seek error.";
+        return false;
       }
 
       # Add the username and password hash to the htpasswd file.
-      $i_result = fwrite ( $this->fp, ( $needs_newline ? "\n" : '' ) . $username . ':' . self::htcrypt ( $password ) . "\n" );
+      $i_result = fwrite ( $this->fp, $username . ':' . self::htcrypt ( $password ) . "\n" );
 
       if ($i_result == False) {
         # htpasswd file write error.
@@ -167,26 +155,14 @@ class htpasswd {
         return false;
       }
 
-      # seek to one byte prior to the end of the file to try to determine if it needs a newline
-      $i_result = fseek ( $this->metafp, -1, SEEK_END );
+      $i_result = fseek ( $this->metafp, 0, SEEK_END );
       if ($i_result == -1) {
-        # fseek failed for some reason, assume we need a newline and seek to the end of the file
-        $needs_newline = true;
-        # seek to the end of the file
-        $i_result = fseek ( $this->metafp, 0, SEEK_END );
-        if ($i_result == -1) {
-          # file seek error
-          $error_msg = "Error: metadata file seek error.";
-          return false;
-        }
-      } else {
-        # this fgets should the file pointer so that we are now at the end of the file
-        $last_char = fgets( $this->fp, 1 );
-        # we need a newline if the last character in the file wasn't one
-        $needs_newline = ($last_char != "\n");
+        # File seek error.
+        $error_msg = "Error: metadata file seek error.";
+        return false;
       }
 
-      $i_result = fwrite ( $this->metafp, ( $needs_newline ? "\n" : '' ) . $meta_model->user . ':' . $meta_model->email . ':' .  $meta_model->name . ':' . $meta_model->mailkey . "\n" );
+      $i_result = fwrite ( $this->metafp, $meta_model->user . ':' . $meta_model->email . ':' .  $meta_model->name . ':' . $meta_model->mailkey . "\n" );
 
       if ($i_result == False) {
         # File write error.
@@ -370,12 +346,32 @@ class htpasswd {
       }
     } # exists
 
-    static function open_or_create($filename) {
+    static function open_or_create($filename, $ensure_trailing_newline = true) {
       if (! file_exists ( $filename )) {
-        return fopen ( $filename, 'w+' );
+        $fp = fopen ( $filename, 'w+' );
       } else {
-        return fopen ( $filename, 'r+' );
+        $fp = fopen ( $filename, 'r+' );
+        if ($ensure_trailing_newline) {
+          # seek to one byte prior to the end of the file to try to determine if it needs a newline
+          if (fseek ( $fp, -1, SEEK_END ) == -1) {
+            # fseek failed for some reason, assume we need a newline and seek to the end of the file
+            $needs_newline = true;
+            fseek ( $fp, 0, SEEK_END );
+          } else {
+            # this fgets should the file pointer so that we are now at the end of the file
+            $last_char = fgets( $fp, 1 );
+            # we need a newline if the last character in the file wasn't one
+            $needs_newline = ($last_char != "\n");
+          }
+          if ($needs_newline) {
+            # append newline to the end of the file
+            fwrite ( $fp, "\n" );
+          }
+          # put us back at the beginning of the file
+          rewind ( $fp );
+        }
       }
+      return $fp;
     } # open_or_create
 
     static function delete($fp, $username, $filename, &$error_msg, $dorewind = true) {
