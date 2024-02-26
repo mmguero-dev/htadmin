@@ -124,15 +124,27 @@ class htpasswd {
         return false;
       }
 
-      $i_result = fseek ( $this->fp, 0, SEEK_END );
+      # seek to one byte prior to the end of the file to try to determine if it needs a newline
+      $i_result = fseek ( $this->fp, -1, SEEK_END );
       if ($i_result == -1) {
-        # File seek error.
-        $error_msg = "Error: htpassword file seek error.";
-        return false;
+        # fseek failed for some reason, assume we need a newline and seek to the end of the file
+        $needs_newline = true;
+        # seek to the end of the file
+        $i_result = fseek ( $this->fp, 0, SEEK_END );
+        if ($i_result == -1) {
+          # file seek error
+          $error_msg = "Error: htpassword file seek error.";
+          return false;
+        }
+      } else {
+        # this fgets should the file pointer so that we are now at the end of the file
+        $last_char = fgets( $this->fp, 1 );
+        # we need a newline if the last character in the file wasn't one
+        $needs_newline = ($last_char != "\n");
       }
 
       # Add the username and password hash to the htpasswd file.
-      $i_result = fwrite ( $this->fp, $username . ':' . self::htcrypt ( $password ) . "\n" );
+      $i_result = fwrite ( $this->fp, ( $needs_newline ? "\n" : '' ) . $username . ':' . self::htcrypt ( $password ) . "\n" );
 
       if ($i_result == False) {
         # htpasswd file write error.
@@ -155,14 +167,26 @@ class htpasswd {
         return false;
       }
 
-      $i_result = fseek ( $this->metafp, 0, SEEK_END );
+      # seek to one byte prior to the end of the file to try to determine if it needs a newline
+      $i_result = fseek ( $this->metafp, -1, SEEK_END );
       if ($i_result == -1) {
-        # File seek error.
-        $error_msg = "Error: metadata file seek error.";
-        return false;
+        # fseek failed for some reason, assume we need a newline and seek to the end of the file
+        $needs_newline = true;
+        # seek to the end of the file
+        $i_result = fseek ( $this->metafp, 0, SEEK_END );
+        if ($i_result == -1) {
+          # file seek error
+          $error_msg = "Error: metadata file seek error.";
+          return false;
+        }
+      } else {
+        # this fgets should the file pointer so that we are now at the end of the file
+        $last_char = fgets( $this->fp, 1 );
+        # we need a newline if the last character in the file wasn't one
+        $needs_newline = ($last_char != "\n");
       }
 
-      $i_result = fwrite ( $this->metafp, $meta_model->user . ':' . $meta_model->email . ':' .  $meta_model->name . ':' . $meta_model->mailkey . "\n" );
+      $i_result = fwrite ( $this->metafp, ( $needs_newline ? "\n" : '' ) . $meta_model->user . ':' . $meta_model->email . ':' .  $meta_model->name . ':' . $meta_model->mailkey . "\n" );
 
       if ($i_result == False) {
         # File write error.
