@@ -354,17 +354,15 @@ class htpasswd {
         if ($ensure_trailing_newline) {
           # seek to one byte prior to the end of the file to try to determine if it needs a newline
           if (fseek ( $fp, -1, SEEK_END ) == -1) {
-            # fseek failed for some reason, assume we need a newline and seek to the end of the file
+            # fseek failed for some reason, assume we need a newline
             $needs_newline = true;
-            fseek ( $fp, 0, SEEK_END );
           } else {
-            # this fgets should the file pointer so that we are now at the end of the file
-            $last_char = fgets( $fp, 1 );
             # we need a newline if the last character in the file wasn't one
-            $needs_newline = ($last_char != "\n");
+            $needs_newline = (fgets( $fp, 1 ) != "\n");
           }
           if ($needs_newline) {
             # append newline to the end of the file
+            fseek ( $fp, 0, SEEK_END );
             fwrite ( $fp, "\n" );
           }
           # put us back at the beginning of the file
