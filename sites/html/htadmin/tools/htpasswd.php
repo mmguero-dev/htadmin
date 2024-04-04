@@ -358,7 +358,12 @@ class htpasswd {
             $needs_newline = true;
           } else {
             # we need a newline if the last character in the file wasn't one
-            $needs_newline = (fgets( $fp, 1 ) != "\n");
+            if (false !== ($last_char = fgetc($fp))) {
+              $needs_newline = ($last_char != "\n");
+            } else {
+              # fgetc failed for some reason, assume we need a newline
+              $needs_newline = true;
+            }
           }
           if ($needs_newline) {
             # append newline to the end of the file
